@@ -1,6 +1,7 @@
 import pickle
 import sys
 
+import numpy as np
 from sklearn import feature_extraction
 
 
@@ -25,7 +26,7 @@ def split_chats(chats, window_num, window_length):
 
 
 def split_clips(clips, window_num, window_length):
-    labels = [-1 for _ in range(window_num)]
+    labels = -1 * np.ones(window_num)
 
     for clip in clips:
         i_window_from = offset_to_i_window(clip.video_offset,
@@ -66,3 +67,6 @@ if __name__ == '__main__':
 
     texts, labels = split_windows(video['chats'], clips, video['length'])
     vectorizer, features = train_tfidf(texts)
+
+    print(labels)
+    print(features)
