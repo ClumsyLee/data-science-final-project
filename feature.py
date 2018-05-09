@@ -3,30 +3,58 @@ import pickle
 from sklearn import feature_extraction
 
 
-def chat_to_i_window(chat, window_size):
-    return int(chat['content_offset_seconds'] // window_size)
+def offset_to_i_window(offset, window_length):
+    return int(offset // window_length)
 
 
-def tfidf(chats, window_size=10.0):
-    window_num = chat_to_i_window(chats[-1], window_size) + 1
-    windows = [[] for _ in range(window_num)]
+def split_chats(chats, window_num, window_length):
+    text_windows = [[] for _ in range(window_num)]
 
     for chat in chats:
-        i_window = chat_to_i_window(chat, window_size)
+        i_window = offset_to_i_window(chat['content_offset_seconds'],
+                                      window_length)
         text = chat['message']['body']
+        text_windows[i_window].append(text)
 
-        windows[i_window].append(text)
+    texts = ['\n'.join(window) for window in text_windows]
+    return texts
 
-    documents = ['\n'.join(window) for window in windows]
 
+def split_clips(clips, window_num, window_length):
+    labels = [-1 for _ in range(window_num)]
+
+    for clip in clips:
+        i_window_from = offset_to_i_window(clip.video_offset,
+                                           window_length)
+        i_window_to = offset_to_i_window(clip.video_offset + clip.duration,
+                                         window_length) + 1
+
+        for i_window in range(i_window_from, i_window_to):
+            labels[i_window] = 1
+
+    return labels
+
+
+def split_windows(chats, clips, video_length, window_length=10.0):
+    window_num = offset_to_i_window(video_length, window_length) + 1
+
+    texts = split_chats(chats, window_num, window_length)
+    labels = split_clips(clips, window_num, window_length)
+
+    return texts, labels
+
+
+def train_tfidf(texts):
     vectorizer = feature_extraction.text.TfidfVectorizer(stop_words='english')
-    features = vectorizer.fit_transform(documents)
+    features = vectorizer.fit_transform(texts)
 
     return vectorizer, features
 
 
 if __name__ == '__main__':
     chats = pickle.load(open('chats.pickle', 'rb'))
-    vectorizer, features = tfidf(chats)
+    clips = pickle.load(open('clips.pickle', 'rb'))
+    video_length = chats[-1]['content_offset_seconds']
 
-    print(vectorizer, features)
+    texts, labels = split_windows(chats, clips, video_length)
+    vectorizer, features = train_tfidf(texts)
