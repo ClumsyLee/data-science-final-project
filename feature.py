@@ -2,7 +2,8 @@ import pickle
 import sys
 
 import numpy as np
-from sklearn import feature_extraction
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.svm import LinearSVC
 
 
 def offset_to_i_window(offset, window_length):
@@ -43,7 +44,7 @@ def split_clips(clips, window_num, window_length):
     return labels
 
 
-def split_windows(chats, clips, video_length, window_length=10.0):
+def split_windows(chats, clips, video_length, window_length=10):
     window_num = offset_to_i_window(video_length, window_length) + 1
 
     texts = split_chats(chats, window_num, window_length)
@@ -53,20 +54,36 @@ def split_windows(chats, clips, video_length, window_length=10.0):
 
 
 def train_tfidf(texts):
-    vectorizer = feature_extraction.text.TfidfVectorizer(stop_words='english')
+    vectorizer = TfidfVectorizer(stop_words='english')
     features = vectorizer.fit_transform(texts)
 
     return vectorizer, features
 
 
 if __name__ == '__main__':
-    video_id = sys.argv[1]
+    texts = []
+    labels = []
 
-    video = pickle.load(open(f'videos/{video_id}.pickle', 'rb'))
-    clips = pickle.load(open('clips.pickle', 'rb'))
+    for video_id in sys.argv[1:-1]:
+        video = pickle.load(open(f'videos/{video_id}.pickle', 'rb'))
+        clips = pickle.load(open('clips.pickle', 'rb'))
 
-    texts, labels = split_windows(video['chats'], clips, video['length'])
+        this_texts, this_labels = split_windows(video['chats'], [clip for clip in clips if clip.video_id == video_id], video['length'])
+        texts += this_texts
+        labels.extend(this_labels)
+
+    labels = np.array(labels)
+    print(np.sum(labels < 0) / len(labels))
+
     vectorizer, features = train_tfidf(texts)
+    classifier = LinearSVC()
+    classifier.fit(features, labels)
+    print(classifier.score(features, labels))
 
-    print(labels)
-    print(features)
+    for video_id in sys.argv[-1:]:
+        video = pickle.load(open(f'videos/{video_id}.pickle', 'rb'))
+
+        texts, labels = split_windows(video['chats'], [clip for clip in clips if clip.video_id == video_id], video['length'])
+        features = vectorizer.transform(texts)
+
+        print(np.where(classifier.predict(features) > 0))
