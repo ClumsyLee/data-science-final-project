@@ -1,4 +1,5 @@
 import pickle
+import sys
 
 from sklearn import feature_extraction
 
@@ -13,6 +14,9 @@ def split_chats(chats, window_num, window_length):
     for chat in chats:
         i_window = offset_to_i_window(chat['content_offset_seconds'],
                                       window_length)
+        if i_window >= window_num:
+            continue
+
         text = chat['message']['body']
         text_windows[i_window].append(text)
 
@@ -28,6 +32,9 @@ def split_clips(clips, window_num, window_length):
                                            window_length)
         i_window_to = offset_to_i_window(clip.video_offset + clip.duration,
                                          window_length) + 1
+
+        if i_window_to > window_num:
+            continue
 
         for i_window in range(i_window_from, i_window_to):
             labels[i_window] = 1
@@ -52,9 +59,10 @@ def train_tfidf(texts):
 
 
 if __name__ == '__main__':
-    chats = pickle.load(open('chats.pickle', 'rb'))
-    clips = pickle.load(open('clips.pickle', 'rb'))
-    video_length = chats[-1]['content_offset_seconds']
+    video_id = sys.argv[1]
 
-    texts, labels = split_windows(chats, clips, video_length)
+    video = pickle.load(open(f'videos/{video_id}.pickle', 'rb'))
+    clips = pickle.load(open('clips.pickle', 'rb'))
+
+    texts, labels = split_windows(video['chats'], clips, video['length'])
     vectorizer, features = train_tfidf(texts)
