@@ -1,6 +1,4 @@
 import requests
-import json
-import time
 from multiprocessing import Pool
 import math
 import logging
@@ -22,7 +20,6 @@ def init_directory_structure():
         os.path.mkdir('data/chats')
     if not os.path.exists('data/videos'):
         os.path.mkdir('data/chats')
-    
 
 
 def twitch_get_video_info(video_id):
@@ -38,23 +35,22 @@ def twitch_get_video_info(video_id):
     return req.json()['data'][0]
 
 
-
 def duration_str_to_seconds(d_str):
     ans = 0
     tmp = d_str.split('h')
     if len(tmp) > 1:
         ans += int(tmp[0]) * 3600
         d_str = tmp[1]
-    
+
     tmp = d_str.split('m')
     if len(tmp) > 1:
         ans += int(tmp[0]) * 60
         d_str = tmp[1]
-    
+
     tmp = d_str.split('s')
     if len(tmp) > 1:
         ans += int(tmp[0])
-    
+
     return ans
 
 
@@ -114,7 +110,7 @@ def twitch_crawl_chat(video_id):
     pool.join()
     chats = sum(chats, [])
     return chats
-    
+
 
 def twitch_get_user_profile(login_name):
     cnt = 0
@@ -128,7 +124,7 @@ def twitch_get_user_profile(login_name):
                 raise
     return req.json()['data'][0]
 
-    
+
 def twitch_get_user_clips(user_id):
     params = {"broadcaster_id":user_id, "first":100}
     clips = []
