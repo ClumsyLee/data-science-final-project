@@ -13,13 +13,13 @@ MAGIC_CLIENT_ID = "jzkbprff40iqj646a697cyrvl0zt2m6"
 
 def init_directory_structure():
     if not os.path.exists('data'):
-        os.path.mkdir('data')
+        os.mkdir('data')
     if not os.path.exists('data/chats'):
-        os.path.mkdir('data/chats')
+        os.mkdir('data/chats')
     if not os.path.exists('data/clips'):
-        os.path.mkdir('data/chats')
+        os.mkdir('data/clips')
     if not os.path.exists('data/videos'):
-        os.path.mkdir('data/chats')
+        os.mkdir('data/videos')
 
 
 def twitch_get_video_info(video_id):
